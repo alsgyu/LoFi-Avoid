@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "depth-avoid-ml"
+version = "0.1.0"
+description = "Experiments for depth-based obstacle avoidance on humanoids with low-resolution cameras."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "matplotlib>=3.8",
+  "pandas>=2.2",
+  "pyyaml>=6.0",
+  "scikit-learn>=1.5",
+  "xgboost>=2.1",
+  "joblib>=1.4",
+]
+
+[project.scripts]
+depth-avoid-plot = "depth_avoid_ml.plot_runs:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,12 @@
+stage_name: baseline
+description: Current robot code with no algorithm changes.
+inputs:
+  source: inha_brain_export
+  required_files:
+    - manifest.txt
+    - depth_metrics.csv
+    - striker_metrics.csv
+evaluation:
+  plot_depth_pipeline: true
+  plot_final_obstacle_hist: true
+  plot_downstream_signals: true

@@ -1,0 +1,18 @@
+stage_name: model_xgboost
+description: Lightweight candidate-level classifier on top of geometric candidates.
+model:
+  type: xgboost_candidate
+  target: candidate_is_real_obstacle
+  threshold: 0.5
+features:
+  - point_count
+  - mean_x
+  - mean_y
+  - mean_z
+  - extent_x
+  - extent_y
+  - extent_z
+  - pca_ratio
+  - persistence_frames
+evaluation:
+  compare_against: tuned

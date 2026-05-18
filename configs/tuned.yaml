@@ -1,0 +1,11 @@
+stage_name: tuned
+description: Geometry pipeline with heuristic and filter tuning only.
+tuning_candidates:
+  - roi_crop
+  - max_depth
+  - plane_removal
+  - temporal_persistence
+  - clustering
+  - shape_filter
+evaluation:
+  compare_against: baseline
