@@ -1,103 +1,73 @@
-# DepthAvoidML
+# LoFi-Avoid
 
-Open-source experiments for depth-based obstacle avoidance on humanoids with low-resolution cameras.
+Low-fidelity depth obstacle avoidance for humanoids.
 
-This repository is meant to study a practical problem:
+LoFi-Avoid studies a simple but painful problem: low-resolution depth can look usable frame-by-frame, yet still produce unstable obstacle signals once the robot starts moving its head, walking, or operating in texture-poor scenes like grass fields.
 
-- depth is noisy on texture-poor soccer fields
-- humanoids move quickly and shake the camera
-- low-resolution sensors make obstacle boundaries unstable
-- false positives propagate into avoid, dribble, clearing, and planner decisions
+This repository is for building and evaluating a practical pipeline that:
 
-The goal is not only to train a model, but to build a full evaluation pipeline that makes it easy to compare:
+- measures those failures clearly
+- compares geometry-only baselines against tuned filters
+- adds lightweight ML only where it actually helps
 
-1. current geometry-only baseline
-2. heuristic tuning and filtering
-3. lightweight ML refinement on top of geometric candidates
+The project starts from a practical conclusion: preprocessing and filtering are necessary, but they were not enough. Even after pushing the geometric pipeline with hand-tuned thresholds and cleanup, some scenes still produced false positives that were too costly to ignore. LoFi-Avoid exists to make that claim measurable and to justify where ML becomes necessary.
 
-## Scope
+## Demo
 
-This repository is intentionally broader than a single striker task.
+<p align="center">
+  <img src="second.gif" alt="LoFi-Avoid RGB and depth view" width="40%">
+</p>
 
-We treat `striker decision` as one useful downstream adapter because it exposes clear signals such as `front_blocked` and `lane_open`, but the core problem here is generic obstacle avoidance. The shared target is:
+<p align="center">
+  <sub>Failure case: depth flicker creates a false obstacle, and background structure is incorrectly treated as a valid obstacle cue (red points).</sub>
+</p>
 
-- produce stable obstacle candidates from noisy depth
-- reduce false positives and jitter
-- improve generic avoid signals that any behavior can consume
+<p align="center">
+  <img src="first.gif" alt="LoFi-Avoid false positive failure case" width="66%">
+</p>
 
-## Repository Layout
+<p align="center">
+  <sub>Paired RGB camera image and depth image from the same scene. Depth points are projected onto a 2D floor grid, accumulated by cell count, and then promoted to obstacle candidates when a local region becomes dense enough.</sub>
+</p>
 
-```text
-DepthAvoidML/
-  adapters/                Bridge code and notes for external systems
-  baselines/               Geometry-only and tuned-filter baselines
-  configs/                 Stage and model configs
-  docs/                    Problem, data, evaluation, integration docs
-  evaluation/              Figure generation and benchmark scripts
-  examples/                Sample run layout
-  models/                  Lightweight ML candidates
-  src/depth_avoid_ml/      Shared Python utilities
-  tests/                   Future unit tests
-```
+## Overview
 
-## Recommended Workflow
+LoFi-Avoid is not an end-to-end detector repository. It is a benchmark and experiment loop for improving obstacle avoidance under noisy depth.
 
-1. Record or replay `rosbag2` from the robot stack.
-2. Export run-level CSV logs from the instrumented robot code.
-3. Copy those exported runs into this repository.
-4. Generate baseline figures and summaries.
-5. Apply heuristic tuning and compare the same bag again.
-6. Add labels and train a lightweight classifier for false-positive rejection.
-7. Compare `baseline -> tuned -> model` using the same benchmark protocol.
+The current design assumes this structure:
 
-## Current Stage Design
+`depth -> geometric candidates -> candidate features -> lightweight classifier -> stable avoid signals`
 
-### Stage 1: Baseline
+That choice is deliberate:
 
-- no algorithm changes
-- only export and quantify current behavior
-- establish figures for point counts, occupied cells, final obstacles, and downstream avoid signals
+- geometric candidates are easy to debug
+- false positives can be measured directly
+- lightweight models are cheap enough for real-time use
+- the same benchmark can compare baseline, tuned, and model-based stages
 
-### Stage 2: Tuned Filters
+The intended use of ML is narrow and deliberate: not to replace geometric preprocessing, but to clean up the hard failure cases that survive even after the best reasonable filtering and projection logic have been applied.
 
-- ROI cuts
-- depth range tuning
-- plane removal
-- temporal consistency
-- clustering and shape filters
+## Problem
 
-### Stage 3: ML Refinement
+Low-fidelity depth tends to fail in ways that matter to control:
 
-- keep geometry as candidate generator
-- train a small classifier to remove false positives
-- preserve low latency and keep a safe fallback path
+- obstacle-free scenes can still produce unstable candidates
+- head motion can amplify point-cloud jitter
+- low resolution can make thin noise look like a real object
+- background walls or structures can be promoted into false obstacles
+- downstream avoid logic can overreact even when the scene is safe
 
-## Why Lightweight ML Instead of End-to-End?
+The point of this repository is to make those effects reproducible and measurable.
 
-For this problem, a small model is the right first step.
+## What This Repo Contains
 
-- it can run in real time on CPU
-- it needs much less data than a full perception model
-- it is easier to debug
-- it fits naturally into the existing pipeline
+- benchmark scripts for exported run data
+- figure generation for baseline vs tuned vs model comparisons
+- documentation for data format and evaluation
+- starter ML baselines for candidate-level classification
+- integration notes for the INHA Soccer robot stack
 
-The intended insertion point is:
-
-`depth -> geometric candidates -> features -> ML classifier -> smoothed obstacle output`
-
-## First Model Recommendation
-
-Start with `XGBoost` or another tree-based tabular model on candidate-level features such as:
-
-- point count
-- mean range
-- height spread
-- cell occupancy
-- PCA ratio
-- temporal persistence
-- overlap with semantic detections
-
-## Quickstart
+## Quick Start
 
 Create a Python environment and install dependencies:
 
@@ -117,18 +87,71 @@ python evaluation/plot_runs.py \
   --out-dir outputs/figures
 ```
 
+## Evaluation Philosophy
+
+Every method should be compared on the same recorded input.
+
+The intended experiment order is:
+
+1. geometry-only baseline
+2. tuned filtering and heuristics
+3. lightweight ML refinement
+
+The main metrics are:
+
+- sampled valid depth points
+- candidate points
+- occupied cells
+- PCA-pass cells
+- final obstacles
+- downstream avoid-state stability
+
+## Why Lightweight ML
+
+The first model should be small, inspectable, and cheap.
+
+LoFi-Avoid assumes the following order of operations:
+
+1. build the strongest geometric baseline possible
+2. quantify its remaining failure cases
+3. add ML only for those remaining errors
+
+A candidate-level tabular model such as `XGBoost` is a strong starting point because it can use features like:
+
+- point count
+- mean position and range
+- vertical spread
+- occupancy density
+- PCA ratio
+- temporal persistence
+
+without replacing the whole perception stack.
+
+## Repository Layout
+
+```text
+LoFi-Avoid/
+  adapters/       Integration notes and bridges
+  baselines/      Geometry and tuned-filter baselines
+  configs/        Stage and model configs
+  docs/           Problem, dataset, evaluation, integration
+  evaluation/     Figure generation and benchmark scripts
+  models/         Lightweight ML baselines
+  src/            Shared Python utilities
+```
+
 ## Integration
 
-The current robot-side CSV exporter lives in the INHA Soccer codebase and is documented in:
+The current robot-side CSV exporter lives in the INHA Soccer stack.
+
+See:
 
 - [docs/integration_inha_brain.md](docs/integration_inha_brain.md)
 - [adapters/inha_brain/README.md](adapters/inha_brain/README.md)
 
-## Roadmap
+## Documentation
 
-- baseline benchmark and figures
-- tuned filter benchmark
-- candidate-level label format
-- XGBoost baseline model
-- generic avoid metrics
-- optional semantic fusion and temporal models
+- [Problem definition](docs/problem.md)
+- [Dataset and run format](docs/dataset.md)
+- [Evaluation protocol](docs/evaluation.md)
+- [INHA brain integration](docs/integration_inha_brain.md)
