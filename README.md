@@ -15,7 +15,7 @@ The project starts from a practical conclusion: preprocessing and filtering are 
 ## Demo
 
 <p align="center">
-  <img src="second.gif" alt="LoFi-Avoid RGB and depth view" width="40%">
+  <img src="first.gif" alt="LoFi-Avoid RGB and depth view" width="40%">
 </p>
 
 <p align="center">
@@ -23,7 +23,7 @@ The project starts from a practical conclusion: preprocessing and filtering are 
 </p>
 
 <p align="center">
-  <img src="first.gif" alt="LoFi-Avoid false positive failure case" width="66%">
+  <img src="second.gif" alt="LoFi-Avoid false positive failure case" width="66%">
 </p>
 
 <p align="center">
