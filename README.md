@@ -22,14 +22,6 @@ The project starts from a practical conclusion: preprocessing and filtering are 
   <sub>Failure case: depth flicker creates a false obstacle, and background structure is incorrectly treated as a valid obstacle cue (red points).</sub>
 </p>
 
-<p align="center">
-  <img src="second.gif" alt="LoFi-Avoid false positive failure case" width="66%">
-</p>
-
-<p align="center">
-  <sub>Paired RGB camera image and depth image from the same scene. Depth points are projected onto a 2D floor grid, accumulated by cell count, and then promoted to obstacle candidates when a local region becomes dense enough.</sub>
-</p>
-
 ## Overview
 
 LoFi-Avoid is not an end-to-end detector repository. It is a benchmark and experiment loop for improving obstacle avoidance under noisy depth.
